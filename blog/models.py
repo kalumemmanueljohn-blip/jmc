@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils.text import slugify
-from django.contrib.auth.models import User
 from django.utils import timezone
 
 
@@ -16,10 +15,10 @@ class BlogPost(models.Model):
     content = models.TextField(verbose_name="Contenu")
     featured_image = models.ImageField(upload_to='blog/', blank=True, null=True, verbose_name="Image à la une")
     
-    # 🔥 CORRECTION 1 : Changer CharField en ForeignKey vers User
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Auteur")
+    # ✅ CORRECTION : Utiliser CharField (texte) au lieu de ForeignKey
+    author = models.CharField(max_length=100, verbose_name="Auteur", default='Administrateur')
     
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', verbose_name="Statut")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='published', verbose_name="Statut")
     is_featured = models.BooleanField(default=False, verbose_name="À la une")
     tags = models.CharField(max_length=200, blank=True, help_text="Séparés par des virgules", verbose_name="Tags")
     views = models.IntegerField(default=0, verbose_name="Vues")
@@ -33,21 +32,18 @@ class BlogPost(models.Model):
         verbose_name_plural = "Articles"
     
     def save(self, *args, **kwargs):
-        # Génération du slug si vide
         if not self.slug:
             self.slug = slugify(self.title)
-            # Éviter les slugs dupliqués
             original_slug = self.slug
             counter = 1
             while BlogPost.objects.filter(slug=self.slug).exists():
                 self.slug = f"{original_slug}-{counter}"
                 counter += 1
         
-        # 🔥 CORRECTION 2 : Date de publication pour les articles publiés
         if self.status == 'published' and not self.published_at:
             self.published_at = timezone.now()
         elif self.status != 'published':
-            self.published_at = None  # Les brouillons n'ont pas de date
+            self.published_at = None
         
         super().save(*args, **kwargs)
     
@@ -55,7 +51,6 @@ class BlogPost(models.Model):
         return self.title
     
     def get_tag_list(self):
-        """Retourne la liste des tags"""
         if self.tags:
             return [tag.strip() for tag in self.tags.split(',')]
         return []

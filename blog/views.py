@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.utils import timezone  # ✅ Ajouté en haut
 from .models import BlogPost, Comment
 from .forms import BlogPostForm
 
@@ -70,10 +71,16 @@ def add_blog(request):
         form = BlogPostForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
-            # Si l'article est publié, définir la date de publication
-            if post.status == 'published' and not post.published_at:
-                from django.utils import timezone
-                post.published_at = timezone.now()
+            
+            # ✅ CORRECTION : Définir l'auteur
+            post.author = request.user.get_full_name() or request.user.username
+            
+            # ✅ CORRECTION : Forcer le statut à 'published'
+            post.status = 'published'
+            
+            # ✅ Définir la date de publication
+            post.published_at = timezone.now()
+            
             post.save()
             messages.success(request, f'✅ Article "{post.title}" ajouté avec succès !')
             return redirect('blog')

@@ -20,8 +20,8 @@
             <p>Participez aux activités et rencontres de la communauté</p>
         </div>
         
-        <!-- Bouton Ajouter un événement -->
-        {% if user.is_staff or user.is_superuser %}
+        <!-- Bouton Ajouter un événement (visible uniquement pour les admins connectés) -->
+        {% if user.is_authenticated and user.is_staff %}
         <div class="admin-actions">
             <a href="{% url 'add_event' %}" class="btn-add-event">
                 <i class="bi bi-plus-circle"></i> Ajouter un événement
@@ -170,7 +170,8 @@
                 </div>
                 <h3>Aucun événement pour le moment</h3>
                 <p>Revenez bientôt pour découvrir nos prochaines activités !</p>
-                {% if user.is_staff or user.is_superuser %}
+                <!-- Bouton Créer le premier événement (visible uniquement pour les admins connectés) -->
+                {% if user.is_authenticated and user.is_staff %}
                     <a href="{% url 'add_event' %}" class="btn-add-first">
                         <i class="bi bi-plus-circle"></i> Créer le premier événement
                     </a>

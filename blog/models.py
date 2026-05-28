@@ -15,7 +15,10 @@ class BlogPost(models.Model):
     excerpt = models.TextField(max_length=300, verbose_name="Résumé")
     content = models.TextField(verbose_name="Contenu")
     featured_image = models.ImageField(upload_to='blog/', blank=True, null=True, verbose_name="Image à la une")
-    author = models.CharField(max_length=100, verbose_name="Auteur")
+    
+    # 🔥 CORRECTION 1 : Changer CharField en ForeignKey vers User
+    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Auteur")
+    
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', verbose_name="Statut")
     is_featured = models.BooleanField(default=False, verbose_name="À la une")
     tags = models.CharField(max_length=200, blank=True, help_text="Séparés par des virgules", verbose_name="Tags")
@@ -33,12 +36,20 @@ class BlogPost(models.Model):
         # Génération du slug si vide
         if not self.slug:
             self.slug = slugify(self.title)
+            # Éviter les slugs dupliqués
+            original_slug = self.slug
+            counter = 1
+            while BlogPost.objects.filter(slug=self.slug).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
         
-        # Date de publication
+        # 🔥 CORRECTION 2 : Date de publication pour les articles publiés
         if self.status == 'published' and not self.published_at:
             self.published_at = timezone.now()
+        elif self.status != 'published':
+            self.published_at = None  # Les brouillons n'ont pas de date
         
-       
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return self.title

@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,10 +42,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # WhiteNoise
     'whitenoise.runserver_nostatic',
-    'storages',
+    
+    # Cloudinary (DOIT être avant tes apps)
+    'cloudinary_storage',
+    'cloudinary',
 
-    # Apps
+    # Tes apps
     'core',
     'accounts',
     'events',
@@ -61,7 +68,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,7 +139,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ==================================================
-# FICHIERS STATIQUES
+# FICHIERS STATIQUES (CSS/JS - restent sur Render)
 # ==================================================
 
 STATIC_URL = '/static/'
@@ -143,36 +149,33 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
-STATICFILES_STORAGE = (
-    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# ==================================================
+# FICHIERS MÉDIAS (Uploads - Cloudinary)
+# ==================================================
+
+# Configuration Cloudinary
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+    'SECURE': True,
+}
+
+# Utiliser Cloudinary pour les fichiers uploadés
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# Initialisation Cloudinary
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+    secure=True
 )
 
-# ==================================================
-# SUPABASE STORAGE (MÉDIAS)
-# ==================================================
-
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_ACCESS_KEY = os.environ.get('SUPABASE_ACCESS_KEY')
-SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY')
-
-# IMPORTANT
-# Ton bucket doit s'appeler : media
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-AWS_ACCESS_KEY_ID = SUPABASE_ACCESS_KEY
-AWS_SECRET_ACCESS_KEY = SUPABASE_SECRET_KEY
-
-AWS_STORAGE_BUCKET_NAME = 'media'
-
-AWS_S3_ENDPOINT_URL = f'{SUPABASE_URL}/storage/v1/s3'
-
-AWS_QUERYSTRING_AUTH = False
-AWS_DEFAULT_ACL = 'public-read'
-AWS_S3_FILE_OVERWRITE = False
-
-# URL publique des fichiers
-MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/media/'
+# URL des médias (redirigée vers Cloudinary)
+MEDIA_URL = '/media/'
 
 # ==================================================
 # UPLOAD DE FICHIERS
@@ -233,14 +236,18 @@ CHAT_MAX_FILE_SIZES = {
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # ==================================================
-# DEBUG
+# DEBUG INFO
 # ==================================================
 
 print("=" * 50)
-print("🚀 CONFIG DJANGO")
-print(f"DEBUG: {DEBUG}")
-print(f"MEDIA_URL: {MEDIA_URL}")
-print(f"SUPABASE: {SUPABASE_URL}")
+print("🚀 CONFIGURATION DJANGO")
+print(f"🔧 DEBUG: {DEBUG}")
+print(f"☁️ CLOUDINARY: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+print(f"📁 STATIC_ROOT: {STATIC_ROOT}")
+print(f"🌐 MEDIA_URL: {MEDIA_URL}")
 print("=" * 50)

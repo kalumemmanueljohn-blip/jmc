@@ -8,7 +8,7 @@ class GalleryImageForm(forms.ModelForm):
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Camp de jeunes 2024'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description de la photo...'}),
-            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
             'taken_at': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -25,18 +25,20 @@ class GalleryImageForm(forms.ModelForm):
 class GalleryVideoForm(forms.ModelForm):
     class Meta:
         model = GalleryVideo
-        fields = ['title', 'description', 'video_url', 'thumbnail', 'category']
+        fields = ['title', 'description', 'video_url', 'video_file', 'thumbnail', 'category']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Concert de louange 2024'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description de la vidéo...'}),
             'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.youtube.com/watch?v=...'}),
-            'thumbnail': forms.FileInput(attrs={'class': 'form-control'}),
+            'video_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'thumbnail': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'title': '📌 Titre de la vidéo',
             'description': '📝 Description',
             'video_url': '🔗 Lien YouTube/Vimeo',
+            'video_file': '🎥 Fichier vidéo (MP4)',
             'thumbnail': '🖼️ Miniature (optionnel)',
             'category': '📂 Catégorie',
         }

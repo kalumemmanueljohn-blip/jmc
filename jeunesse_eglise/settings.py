@@ -10,11 +10,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-change-this-in-production-123456789')
 
 # DEBUG - Forcé à True pour le développement local
-# Si vous voulez utiliser une variable d'environnement, décommentez la ligne ci-dessous
-DEBUG = True  # Changé: forcé à True pour voir les images en local
-# DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'  # Décommentez cette ligne pour utiliser .env
+DEBUG = True
 
-# Configuration de ALLOWED_HOSTS pour le développement ET la production
+# Configuration de ALLOWED_HOSTS
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '192.168.1.*', '::1']
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://localhost:8000', 'http://127.0.0.1:8000']
 
@@ -30,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
+    'storages',  # ✅ AJOUTÉ pour Supabase Storage
     
     # Applications du projet
     'core',
@@ -92,9 +91,10 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 
-# ====================
-# 🗄️ DATABASE
-# ====================
+# ============================================
+# DATABASE - Supabase PostgreSQL
+# ============================================
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -105,6 +105,39 @@ DATABASES = {
         'PORT': '6543',
     }
 }
+
+# ============================================
+# SUPABASE STORAGE (pour les fichiers médias)
+# ============================================
+
+# Variables d'environnement pour Supabase (à définir sur Render)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://nrviznchvybomvjrjnrs.supabase.co')
+SUPABASE_ACCESS_KEY = os.environ.get('SUPABASE_ACCESS_KEY', '')
+SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY', '')
+
+# Configuration S3 compatible avec Supabase Storage
+if SUPABASE_ACCESS_KEY and SUPABASE_SECRET_KEY:
+    # Utiliser Supabase Storage en production
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    AWS_ACCESS_KEY_ID = SUPABASE_ACCESS_KEY
+    AWS_SECRET_ACCESS_KEY = SUPABASE_SECRET_KEY
+    AWS_STORAGE_BUCKET_NAME = 'media'
+    AWS_S3_ENDPOINT_URL = f'{SUPABASE_URL}/storage/v1/s3'
+    AWS_S3_REGION_NAME = 'ca-central-1'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
+    
+    # URL publique pour les médias
+    MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/media/'
+    print(f"☁️  Utilisation de Supabase Storage: {MEDIA_URL}")
+else:
+    # Fallback: stockage local (développement)
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+    print("📁 Utilisation du stockage local")
 
 # ============================================
 # CHANNELS / WEBSOCKET
@@ -128,26 +161,21 @@ LANGUAGE_CODE = 'fr-fr'
 USE_I18N = True
 
 # ============================================
-# FICHIERS STATIQUES ET MÉDIAS
+# FICHIERS STATIQUES
 # ============================================
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# Configuration du stockage - adapté selon le mode DEBUG
+# Configuration du stockage statique
 if DEBUG:
-    # En développement: pas de compression
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 else:
-    # En production: avec compression Whitenoise
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
 # ============================================
-# UPLOAD DE FICHIERS (avec compression)
+# UPLOAD DE FICHIERS
 # ============================================
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB
@@ -198,19 +226,20 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = False
 
 # ============================================
-# INFORMATIONS DE DÉBOGAGE (optionnel)
+# INFORMATIONS DE DÉBOGAGE
 # ============================================
 
 if DEBUG:
     print("=" * 50)
     print("🔧 MODE DÉVELOPPEMENT ACTIVÉ")
     print(f"✅ DEBUG = {DEBUG}")
-    print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
-    print(f"📁 STATIC_ROOT: {STATIC_ROOT}")
     print(f"🌐 MEDIA_URL: {MEDIA_URL}")
     print(f"🌐 STATIC_URL: {STATIC_URL}")
-    print(f"📂 Le dossier media existe: {MEDIA_ROOT.exists()}")
     print(f"🌍 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    if SUPABASE_ACCESS_KEY:
+        print("☁️  Supabase Storage: CONNECTÉ")
+    else:
+        print("📁 Stockage local: ACTIF")
     print("=" * 50)
 else:
     print("🚀 MODE PRODUCTION ACTIVÉ")

@@ -1,20 +1,24 @@
-Django>=5.1,<6.0
+# Django et core
+Django==5.2.14
 Pillow==10.4.0
 whitenoise==6.6.0
+gunicorn==21.2.0
+daphne==4.1.0
+
+# Base de données
+psycopg2-binary==2.9.9
+dj-database-url==2.1.0
+
+# WebSockets
 channels==4.0.0
 channels-redis==4.2.0
-daphne==4.1.0
 redis==5.0.1
-psycopg2-binary==2.9.9
-gunicorn==21.2.0
-dj-database-url==2.1.0
-Django==5.2.14
-whitenoise==6.6.0
-channels==4.0.0
-Pillow==10.4.0
-gunicorn==21.2.0
+
+# Stockage (SUPABASE)
+django-storages==1.14.2
+boto3==1.34.0
+
+# Traitement d'images
 moviepy==1.0.3
-Pillow==10.4.0
 django-imagekit==4.1.0
 pydub==0.25.1
-moviepy==1.0.3

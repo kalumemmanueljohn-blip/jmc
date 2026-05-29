@@ -14,9 +14,9 @@ channels==4.0.0
 channels-redis==4.2.0
 redis==5.0.1
 
-# Stockage (SUPABASE)
-django-storages==1.14.2
-boto3==1.34.0
+# Cloudinary (remplace Supabase)
+cloudinary==1.36.0
+django-cloudinary-storage==0.3.0
 
 # Traitement d'images
 moviepy==1.0.3

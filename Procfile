@@ -1,1 +1,1 @@
-'web: daphne -b 0.0.0.0 -p $PORT jeunesse_eglise.asgi:application' 
+web: gunicorn jeunesse_eglise.wsgi:application --bind 0.0.0.0:$PORT

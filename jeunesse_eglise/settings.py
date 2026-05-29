@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
-    'storages',  # ✅ AJOUTÉ pour Supabase Storage
     
     # Applications du projet
     'core',
@@ -107,37 +106,58 @@ DATABASES = {
 }
 
 # ============================================
-# SUPABASE STORAGE (pour les fichiers médias)
+# FICHIERS STATIQUES ET MÉDIAS
 # ============================================
 
-# Variables d'environnement pour Supabase (à définir sur Render)
-SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://nrviznchvybomvjrjnrs.supabase.co')
-SUPABASE_ACCESS_KEY = os.environ.get('SUPABASE_ACCESS_KEY', '')
-SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY', '')
+# Stockage local pour les médias
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
-# Configuration S3 compatible avec Supabase Storage
-if SUPABASE_ACCESS_KEY and SUPABASE_SECRET_KEY:
-    # Utiliser Supabase Storage en production
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    
-    AWS_ACCESS_KEY_ID = SUPABASE_ACCESS_KEY
-    AWS_SECRET_ACCESS_KEY = SUPABASE_SECRET_KEY
-    AWS_STORAGE_BUCKET_NAME = 'media'
-    AWS_S3_ENDPOINT_URL = f'{SUPABASE_URL}/storage/v1/s3'
-    AWS_S3_REGION_NAME = 'ca-central-1'
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = 'public-read'
-    AWS_QUERYSTRING_AUTH = False
-    
-    # URL publique pour les médias
-    MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/media/'
-    print(f"☁️  Utilisation de Supabase Storage: {MEDIA_URL}")
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+if DEBUG:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 else:
-    # Fallback: stockage local (développement)
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
-    print("📁 Utilisation du stockage local")
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# ============================================
+# CRÉATION AUTOMATIQUE DES DOSSIERS MEDIA
+# ============================================
+
+# Cette section crée automatiquement tous les dossiers nécessaires
+# pour les uploads - AUCUN ACCÈS SHELL NÉCESSAIRE !
+
+# Liste de tous les dossiers media requis par l'application
+MEDIA_SUBFOLDERS = [
+    'gallery',      # Photos de la galerie
+    'blog',         # Images du blog
+    'events',       # Images des événements
+    'teachings',    # Images des enseignements
+    'profiles',     # Photos de profil utilisateur
+    'chat',         # Fichiers du chat
+    'donations',    # Justificatifs de dons
+]
+
+# Créer le dossier principal
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+# Créer tous les sous-dossiers
+for subfolder in MEDIA_SUBFOLDERS:
+    folder_path = os.path.join(MEDIA_ROOT, subfolder)
+    os.makedirs(folder_path, exist_ok=True)
+
+# Afficher les dossiers créés (visible dans les logs Render)
+print("=" * 50)
+print("📁 DOSSIERS MEDIA CRÉÉS/VÉRIFIÉS")
+print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
+for subfolder in MEDIA_SUBFOLDERS:
+    folder_path = os.path.join(MEDIA_ROOT, subfolder)
+    print(f"   ✅ {subfolder}/")
+print("=" * 50)
 
 # ============================================
 # CHANNELS / WEBSOCKET
@@ -159,20 +179,6 @@ USE_TZ = True
 TIME_ZONE = 'Africa/Kinshasa'
 LANGUAGE_CODE = 'fr-fr'
 USE_I18N = True
-
-# ============================================
-# FICHIERS STATIQUES
-# ============================================
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-
-# Configuration du stockage statique
-if DEBUG:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-else:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ============================================
 # UPLOAD DE FICHIERS
@@ -233,13 +239,10 @@ if DEBUG:
     print("=" * 50)
     print("🔧 MODE DÉVELOPPEMENT ACTIVÉ")
     print(f"✅ DEBUG = {DEBUG}")
+    print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
     print(f"🌐 MEDIA_URL: {MEDIA_URL}")
     print(f"🌐 STATIC_URL: {STATIC_URL}")
     print(f"🌍 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-    if SUPABASE_ACCESS_KEY:
-        print("☁️  Supabase Storage: CONNECTÉ")
-    else:
-        print("📁 Stockage local: ACTIF")
     print("=" * 50)
 else:
     print("🚀 MODE PRODUCTION ACTIVÉ")

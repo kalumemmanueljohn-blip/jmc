@@ -7,14 +7,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SÉCURITÉ
 # ==================================================
 
-SECRET_KEY = 'django-insecure-change-this-in-production-123456789'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-change-this-in-production-123456789')
 
-# DEBUG forcé à True pour le développement local
-DEBUG = True
+# DEBUG - Doit être False sur Render
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1']
+# ✅ ALLOWED_HOSTS CORRECT POUR RENDER
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    '.onrender.com',  # Permet tous les sous-domaines onrender.com
+]
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 
 # ==================================================
 # APPLICATIONS INSTALLÉES
@@ -86,13 +96,17 @@ WSGI_APPLICATION = 'jeunesse_eglise.wsgi.application'
 ASGI_APPLICATION = 'jeunesse_eglise.asgi.application'
 
 # ==================================================
-# BASE DE DONNÉES - SQLite (pour local)
+# BASE DE DONNÉES - SUPABASE
 # ==================================================
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'postgres'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT', '6543'),
     }
 }
 
@@ -124,13 +138,12 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ==================================================
-# FICHIERS MÉDIAS (stockage local)
+# FICHIERS MÉDIAS
 # ==================================================
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Stockage local
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # ==================================================
@@ -181,18 +194,12 @@ CHAT_MAX_FILE_SIZES = {
 # CRÉATION AUTO DES DOSSIERS MEDIA
 # ==================================================
 
-os.makedirs(MEDIA_ROOT, exist_ok=True)
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 MEDIA_SUBFOLDERS = [
-    'gallery',
-    'gallery/videos',
-    'gallery/thumbnails',
-    'blog',
-    'events',
-    'teachings',
-    'profiles',
-    'chat',
-    'donations',
+    'gallery', 'gallery/videos', 'gallery/thumbnails',
+    'blog', 'events', 'teachings', 'profiles', 'chat', 'donations'
 ]
 
 for subfolder in MEDIA_SUBFOLDERS:
@@ -200,14 +207,23 @@ for subfolder in MEDIA_SUBFOLDERS:
     os.makedirs(folder_path, exist_ok=True)
 
 # ==================================================
+# SÉCURITÉ PRODUCTION
+# ==================================================
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# ==================================================
 # DEBUG INFO
 # ==================================================
 
 print("=" * 50)
-print("🔧 MODE DÉVELOPPEMENT LOCAL ACTIVÉ")
-print(f"✅ DEBUG: {DEBUG}")
+print("🚀 MODE PRODUCTION RENDER")
+print(f"🔧 DEBUG: {DEBUG}")
+print(f"🌍 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
 print(f"📁 STATIC_ROOT: {STATIC_ROOT}")
-print(f"🌐 MEDIA_URL: {MEDIA_URL}")
-print(f"🌐 STATIC_URL: {STATIC_URL}")
 print("=" * 50)

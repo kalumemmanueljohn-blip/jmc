@@ -1,8 +1,5 @@
 from pathlib import Path
 import os
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -10,25 +7,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SÉCURITÉ
 # ==================================================
 
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-change-this-in-production'
-)
+SECRET_KEY = 'django-insecure-change-this-in-production-123456789'
 
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# DEBUG forcé à True pour le développement local
+DEBUG = True
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '.onrender.com',
-    '::1',
-]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '::1']
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-]
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # ==================================================
 # APPLICATIONS INSTALLÉES
@@ -41,14 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # WhiteNoise
     'whitenoise.runserver_nostatic',
     
-    # Cloudinary (DOIT être avant tes apps)
-    'cloudinary_storage',
-    'cloudinary',
-
     # Tes apps
     'core',
     'accounts',
@@ -106,17 +86,13 @@ WSGI_APPLICATION = 'jeunesse_eglise.wsgi.application'
 ASGI_APPLICATION = 'jeunesse_eglise.asgi.application'
 
 # ==================================================
-# BASE DE DONNÉES - SUPABASE POSTGRESQL
+# BASE DE DONNÉES - SQLite (pour local)
 # ==================================================
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT', '6543'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -139,43 +115,23 @@ USE_I18N = True
 USE_TZ = True
 
 # ==================================================
-# FICHIERS STATIQUES (CSS/JS - restent sur Render)
+# FICHIERS STATIQUES
 # ==================================================
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
-
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ==================================================
-# FICHIERS MÉDIAS (Uploads - Cloudinary)
+# FICHIERS MÉDIAS (stockage local)
 # ==================================================
 
-# Configuration Cloudinary
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-    'SECURE': True,
-}
-
-# Utiliser Cloudinary pour les fichiers uploadés
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# Initialisation Cloudinary
-cloudinary.config(
-    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
-    secure=True
-)
-
-# URL des médias (redirigée vers Cloudinary)
 MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Stockage local
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # ==================================================
 # UPLOAD DE FICHIERS
@@ -210,16 +166,7 @@ CHAT_ALLOWED_FILE_TYPES = {
     'image': ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
     'video': ['.mp4', '.mov', '.avi', '.mkv'],
     'audio': ['.mp3', '.wav', '.ogg'],
-    'document': [
-        '.pdf',
-        '.doc',
-        '.docx',
-        '.txt',
-        '.xls',
-        '.xlsx',
-        '.ppt',
-        '.pptx',
-    ],
+    'document': ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.ppt', '.pptx'],
 }
 
 CHAT_MAX_FILE_SIZES = {
@@ -231,23 +178,36 @@ CHAT_MAX_FILE_SIZES = {
 }
 
 # ==================================================
-# SÉCURITÉ PRODUCTION
+# CRÉATION AUTO DES DOSSIERS MEDIA
 # ==================================================
 
-if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+
+MEDIA_SUBFOLDERS = [
+    'gallery',
+    'gallery/videos',
+    'gallery/thumbnails',
+    'blog',
+    'events',
+    'teachings',
+    'profiles',
+    'chat',
+    'donations',
+]
+
+for subfolder in MEDIA_SUBFOLDERS:
+    folder_path = os.path.join(MEDIA_ROOT, subfolder)
+    os.makedirs(folder_path, exist_ok=True)
 
 # ==================================================
 # DEBUG INFO
 # ==================================================
 
 print("=" * 50)
-print("🚀 CONFIGURATION DJANGO")
-print(f"🔧 DEBUG: {DEBUG}")
-print(f"☁️ CLOUDINARY: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+print("🔧 MODE DÉVELOPPEMENT LOCAL ACTIVÉ")
+print(f"✅ DEBUG: {DEBUG}")
+print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
 print(f"📁 STATIC_ROOT: {STATIC_ROOT}")
 print(f"🌐 MEDIA_URL: {MEDIA_URL}")
+print(f"🌐 STATIC_URL: {STATIC_URL}")
 print("=" * 50)

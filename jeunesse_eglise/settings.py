@@ -1,5 +1,9 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,7 +21,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '::1',
-    '.onrender.com',  # Permet tous les sous-domaines onrender.com
+    '.onrender.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -38,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
+    'storages',  # ✅ Ajouté pour Supabase Storage
     
     # Tes apps
     'core',
@@ -96,7 +101,7 @@ WSGI_APPLICATION = 'jeunesse_eglise.wsgi.application'
 ASGI_APPLICATION = 'jeunesse_eglise.asgi.application'
 
 # ==================================================
-# BASE DE DONNÉES - SUPABASE
+# BASE DE DONNÉES - SUPABASE POSTGRESQL
 # ==================================================
 
 DATABASES = {
@@ -109,6 +114,39 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '6543'),
     }
 }
+
+# ==================================================
+# SUPABASE STORAGE CONFIGURATION
+# ==================================================
+
+# Variables Supabase
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_ACCESS_KEY = os.environ.get('SUPABASE_ACCESS_KEY')
+SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY')
+
+# Configuration S3 compatible avec Supabase
+if SUPABASE_ACCESS_KEY and SUPABASE_SECRET_KEY:
+    # Utiliser Supabase Storage
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    AWS_ACCESS_KEY_ID = SUPABASE_ACCESS_KEY
+    AWS_SECRET_ACCESS_KEY = SUPABASE_SECRET_KEY
+    AWS_STORAGE_BUCKET_NAME = 'media'
+    AWS_S3_ENDPOINT_URL = f'{SUPABASE_URL}/storage/v1/s3'
+    AWS_S3_REGION_NAME = 'ca-central-1'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
+    
+    # URL publique pour les médias
+    MEDIA_URL = f'{SUPABASE_URL}/storage/v1/object/public/media/'
+    print(f"☁️  Supabase Storage configuré: {MEDIA_URL}")
+else:
+    # Fallback: stockage local
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+    print("📁 Stockage local (fallback)")
 
 # ==================================================
 # AUTHENTIFICATION
@@ -136,15 +174,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# ==================================================
-# FICHIERS MÉDIAS
-# ==================================================
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # ==================================================
 # UPLOAD DE FICHIERS
@@ -191,22 +220,6 @@ CHAT_MAX_FILE_SIZES = {
 }
 
 # ==================================================
-# CRÉATION AUTO DES DOSSIERS MEDIA
-# ==================================================
-
-if not os.path.exists(MEDIA_ROOT):
-    os.makedirs(MEDIA_ROOT, exist_ok=True)
-
-MEDIA_SUBFOLDERS = [
-    'gallery', 'gallery/videos', 'gallery/thumbnails',
-    'blog', 'events', 'teachings', 'profiles', 'chat', 'donations'
-]
-
-for subfolder in MEDIA_SUBFOLDERS:
-    folder_path = os.path.join(MEDIA_ROOT, subfolder)
-    os.makedirs(folder_path, exist_ok=True)
-
-# ==================================================
 # SÉCURITÉ PRODUCTION
 # ==================================================
 
@@ -224,6 +237,7 @@ print("=" * 50)
 print("🚀 MODE PRODUCTION RENDER")
 print(f"🔧 DEBUG: {DEBUG}")
 print(f"🌍 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-print(f"📁 MEDIA_ROOT: {MEDIA_ROOT}")
+print(f"☁️  Supabase Storage: {'Connecté' if SUPABASE_ACCESS_KEY else 'Non connecté'}")
+print(f"🌐 MEDIA_URL: {MEDIA_URL}")
 print(f"📁 STATIC_ROOT: {STATIC_ROOT}")
 print("=" * 50)
